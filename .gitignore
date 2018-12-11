@@ -1,0 +1,15 @@
+.idea
+.php_cs.cache
+phpunit.xml
+/app/config/parameters.yml
+/bin/
+/vendor/*
+/*/vendor/**
+
+/.settings/*
+/.buildpath
+/.project
+/.metadata/*
+/.sonarlint/*
+
+/*/**/*.old.php
