@@ -4,7 +4,7 @@ declare(strict_types = 1);
 
 namespace Model\Entity;
 
-class User
+class User implements IDomainObject
 {
     /**
      * @var int

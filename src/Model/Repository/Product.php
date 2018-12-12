@@ -4,10 +4,23 @@ declare(strict_types = 1);
 
 namespace Model\Repository;
 
+use Model\Repository\IdentityMapper;
 use Model\Entity\Product as ProductEntity;
 
+/**
+ * Product class
+ *
+ * @property IdentityMapper $manager
+ */
 class Product
 {
+    private $manager;
+
+    public function __construct()
+    {
+        $this->manager = new IdentityMapper(ProductEntity::class);
+    }
+
     /**
      * Поиск объектов Продуктов согласно переданному массиву id
      *
@@ -103,19 +116,6 @@ class Product
     }
 
     /**
-     * Получаем прототип Продукта id = 1
-     *
-     * @return ProductEntity
-     */
-    private function getProto(): ProductEntity
-    {
-        $item = $this->getDataFromSource(['id' => [1, ]]);
-        $proto = new ProductEntity($item[0]['id'], $item[0]['name'], $item[0]['price']);
-
-        return $proto;
-    }
-
-    /**
      * Получаем массив объектов Продуктов
      *
      * @return ProductEntity[]
@@ -123,32 +123,40 @@ class Product
     private function getProductsList(array $ids = []): array
     {
         $productsList = [];
-        $proto = $this->getProto();
 
         if (!count($ids)) {
             foreach ($this->getDataFromSource() as $item) {
-                $product = clone $proto;
-                $product
-                    ->setId($item['id'])
-                    ->setName($item['name'])
-                    ->setPrice($item['price']);
-
-                $productsList[] = $product;
+                $productsList[] = $this->getOrCreateProduct($item);
             }
-
-            return $productsList;
         }
 
         foreach ($this->getDataFromSource(['id' => $ids]) as $item) {
-            $product = clone $proto;
-            $product
-                ->setId($item['id'])
-                ->setName($item['name'])
-                ->setPrice($item['price']);
-
-            $productsList[] = $product;
+            $productsList[] = $this->getOrCreateProduct($item);
         }
 
         return $productsList;
+    }
+
+    private function createProductEntity(
+        int $id,
+        string $name = null,
+        float $price = null
+    ): ProductEntity {
+        return new ProductEntity($id, $name, $price);
+    }
+
+    private function getOrCreateProduct(array $item): ProductEntity
+    {
+        if (!$product = $this->manager->find((int)$item['id'])) {
+            $product = $this->createProductEntity(
+                (int)$item['id'],
+                (string)$item['name'],
+                (float)$item['price']
+            );
+
+            $this->manager->add($product);
+        }
+
+        return $product;
     }
 }

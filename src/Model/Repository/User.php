@@ -4,20 +4,30 @@ declare(strict_types = 1);
 
 namespace Model\Repository;
 
-use Model\Entity;
+use Model\Repository\IdentityMapper;
+use Model\Entity\User as UserEntity;
+use Model\Entity\Role as RoleEntity;
 
 class User
 {
+    /** @property IdentityMapper $manager */
+    private $manager;
+
+    public function __construct()
+    {
+        $this->manager = new IdentityMapper(UserEntity::class);
+    }
+
     /**
      * Получаем пользователя по идентификатору
      *
      * @param int $id
-     * @return Entity\User|null
+     * @return UserEntity|null
      */
-    public function getById(int $id): ?Entity\User
+    public function getById(int $id): ?UserEntity
     {
         foreach ($this->getDataFromSource(['id' => $id]) as $user) {
-            return $this->createUser($user);
+            return $this->getOrCreateUser($user);
         }
 
         return null;
@@ -27,13 +37,13 @@ class User
      * Получаем пользователя по логину
      *
      * @param string $login
-     * @return Entity\User
+     * @return UserEntity
      */
-    public function getByLogin(string $login): ?Entity\User
+    public function getByLogin(string $login): ?UserEntity
     {
         foreach ($this->getDataFromSource(['login' => $login]) as $user) {
             if ($user['login'] === $login) {
-                return $this->createUser($user);
+                return $this->getOrCreateUser($user);
             }
         }
 
@@ -44,19 +54,29 @@ class User
      * Фабрика по созданию сущности пользователя
      *
      * @param array $user
-     * @return Entity\User
+     * @return UserEntity
      */
-    private function createUser(array $user): Entity\User
+    private function createUser(array $user): UserEntity
     {
         $role = $user['role'];
 
-        return new Entity\User(
+        return new UserEntity(
             $user['id'],
             $user['name'],
             $user['login'],
             $user['password'],
-            new Entity\Role($role['id'], $role['title'], $role['role'])
+            new RoleEntity($role['id'], $role['title'], $role['role'])
         );
+    }
+
+    private function getOrCreateUser(array $user): UserEntity
+    {
+        if (!$userEntity = $this->manager->find((int)$user['id'])) {
+            $userEntity = $this->createUser($user);
+            $this->manager->add($userEntity);
+        }
+
+        return $userEntity;
     }
 
     /**
@@ -69,8 +89,8 @@ class User
     private function getDataFromSource(array $search = [])
     {
         $admin = ['id' => 1, 'title' => 'Super Admin', 'role' => 'admin'];
-        $user = ['id' => 1, 'title' => 'Main user', 'role' => 'user'];
-        $test = ['id' => 1, 'title' => 'For test needed', 'role' => 'test'];
+        $user = ['id' => 2, 'title' => 'Main user', 'role' => 'user'];
+        $test = ['id' => 3, 'title' => 'For test needed', 'role' => 'test'];
 
         $dataSource = [
             [

@@ -4,7 +4,7 @@ declare(strict_types = 1);
 
 namespace Model\Entity;
 
-class Role
+class Role implements IDomainObject
 {
     /**
      * @var int
